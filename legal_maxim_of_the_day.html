@@ -1,0 +1,185 @@
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font-sans); }
+  .wrap { min-height: 520px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2.5rem 1.5rem; text-align: center; }
+  .badge { display: inline-flex; align-items: center; gap: 6px; background: var(--bg-accent); color: var(--text-accent); font-size: 12px; font-weight: 500; padding: 4px 14px; border-radius: 20px; margin-bottom: 2rem; letter-spacing: 0.04em; }
+  .scale { display: flex; align-items: center; gap: 6px; color: var(--text-muted); font-size: 12px; margin-bottom: 2rem; }
+  .maxim-latin { font-family: var(--font-voice); font-size: 28px; font-weight: 500; color: var(--text-primary); line-height: 1.4; margin-bottom: 0.5rem; max-width: 520px; }
+  .maxim-num { font-size: 13px; color: var(--text-muted); margin-bottom: 2rem; }
+  .reveal-btn { background: var(--fill-accent); color: var(--on-accent); border: none; border-radius: var(--radius); padding: 12px 32px; font-size: 15px; font-weight: 500; cursor: pointer; transition: background 0.15s, transform 0.1s; font-family: var(--font-sans); }
+  .reveal-btn:hover { background: var(--fill-accent-hover); }
+  .reveal-btn:active { transform: scale(0.97); }
+  .meaning-card { margin-top: 2rem; background: var(--surface-1); border: 0.5px solid var(--border); border-radius: 12px; padding: 1.5rem 2rem; max-width: 520px; width: 100%; text-align: left; animation: fadeUp 0.3s ease; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .meaning-label { font-size: 11px; font-weight: 500; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.5rem; }
+  .meaning-text { font-size: 16px; color: var(--text-primary); line-height: 1.65; margin-bottom: 1rem; }
+  .example-label { font-size: 11px; font-weight: 500; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.5rem; }
+  .example-text { font-size: 14px; color: var(--text-secondary); line-height: 1.6; border-left: 2px solid var(--border-accent); padding-left: 12px; }
+  .divider { border: none; border-top: 0.5px solid var(--border); margin: 1.5rem 0; }
+  .nav-row { display: flex; gap: 10px; justify-content: center; margin-top: 1.5rem; flex-wrap: wrap; }
+  .nav-btn { background: transparent; border: 0.5px solid var(--border-strong); border-radius: var(--radius); padding: 8px 20px; font-size: 13px; color: var(--text-secondary); cursor: pointer; font-family: var(--font-sans); transition: background 0.12s; }
+  .nav-btn:hover { background: var(--surface-1); color: var(--text-primary); }
+  .counter { font-size: 13px; color: var(--text-muted); margin-top: 1rem; }
+  .seen-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--fill-success); margin-right: 5px; vertical-align: middle; }
+</style>
+
+<div class="wrap" id="app">
+  <h2 class="sr-only" style="position:absolute;left:-9999px;">Legal Maxim of the Day</h2>
+  <div class="badge"><i class="ti ti-gavel" aria-hidden="true"></i> Maxim of the day</div>
+  <div class="maxim-latin" id="maxim-text"></div>
+  <div class="maxim-num" id="maxim-num"></div>
+  <button class="reveal-btn" id="reveal-btn" onclick="revealMeaning()">Reveal meaning</button>
+  <div class="meaning-card" id="meaning-card" style="display:none;">
+    <div class="meaning-label">Meaning</div>
+    <div class="meaning-text" id="meaning-text"></div>
+    <hr class="divider">
+    <div class="example-label">Example</div>
+    <div class="example-text" id="example-text"></div>
+  </div>
+  <div class="nav-row">
+    <button class="nav-btn" onclick="changeMaxim(-1)"><i class="ti ti-arrow-left" aria-hidden="true"></i> Previous</button>
+    <button class="nav-btn" onclick="goToday()"><i class="ti ti-calendar" aria-hidden="true"></i> Today</button>
+    <button class="nav-btn" onclick="changeMaxim(1)">Next <i class="ti ti-arrow-right" aria-hidden="true"></i></button>
+  </div>
+  <div class="counter" id="counter"></div>
+</div>
+
+<script>
+const maxims = [
+  { latin: "Actus Reus non facit reum nisi mens sit rea", meaning: "The act itself does not make a person guilty unless there is a guilty mind.", example: "A person who accidentally kills someone while driving recklessly may not be guilty if there was no intention to harm." },
+  { latin: "Audi Alteram Partem", meaning: "Hear the other side — the right to a fair hearing.", example: "Before dismissing an employee, the employer must provide the employee with an opportunity to explain." },
+  { latin: "Nemo Judex in Causa Sua", meaning: "No one can be a judge in their own case.", example: "A judge must recuse themselves from cases where they have a personal interest." },
+  { latin: "Res Ipsa Loquitur", meaning: "The thing speaks for itself.", example: "In a case where a surgeon leaves a foreign object inside a patient's body, negligence is presumed." },
+  { latin: "Caveat Emptor", meaning: "Let the buyer beware.", example: "If a person buys a used car, they cannot later sue the seller for defects if they did not inspect the car properly." },
+  { latin: "Ignorantia Juris Non Excusat", meaning: "Ignorance of the law is no excuse.", example: "A person cannot claim ignorance of the law if they break a traffic rule." },
+  { latin: "Volenti Non Fit Injuria", meaning: "To a willing person, no injury is done.", example: "If someone participates in a dangerous sport and gets injured, they cannot sue for damages." },
+  { latin: "Ejusdem Generis", meaning: "Of the same kind or nature.", example: "If a law mentions 'dogs, cats, and other animals', the term 'other animals' would include only domestic animals of the same nature." },
+  { latin: "Lex Loci Delicti Commissi", meaning: "The law of the place where the wrong was committed.", example: "If a tort occurs in a foreign country, the laws of that country would govern the tort." },
+  { latin: "Nemo Dat Quod Non Habet", meaning: "No one can give what they do not have.", example: "A person who steals a car cannot transfer ownership of the car to someone else." },
+  { latin: "Ubi Jus Ibi Remedium", meaning: "Where there is a right, there is a remedy.", example: "If a person's property is trespassed upon, they have the legal right to seek damages or an injunction." },
+  { latin: "Stare Decisis et Non Quieta Movere", meaning: "Stand by what has been decided and do not disturb settled matters.", example: "Courts follow previous rulings (precedents) in similar cases to ensure consistency." },
+  { latin: "Lex Facit Regem", meaning: "The law makes the king.", example: "The power of the ruler is derived from the law, not personal discretion." },
+  { latin: "Falsus in Uno, Falsus in Omnibus", meaning: "False in one thing, false in everything.", example: "If a witness is proven to be lying in one part of their testimony, their entire testimony can be disregarded." },
+  { latin: "Pacta Sunt Servanda", meaning: "Agreements must be kept.", example: "If a person enters into a contract, they are legally bound to fulfill the terms." },
+  { latin: "Quod Ab Initio Non Valet, Postea Neque Valet", meaning: "What is not valid from the beginning is never valid.", example: "A contract that is void due to lack of consideration remains void even if attempts are made to rectify it later." },
+  { latin: "Sic Utere Tuo Ut Alienum Non Laedas", meaning: "Use your property in such a manner as not to injure the property of another.", example: "If a person builds a wall that blocks another's view, they may be liable for nuisance." },
+  { latin: "Qui Facit Per Alium Facit Per Se", meaning: "He who acts through another acts himself.", example: "A principal is liable for the actions of their agent performed in the course of their duties." },
+  { latin: "Mala Fides", meaning: "Bad faith.", example: "A person acting with dishonest intent in contract negotiations may be said to be acting in mala fide." },
+  { latin: "Tempus Fugit", meaning: "Time flies.", example: "Statutes of limitations expire after a certain period, and legal actions cannot be initiated after that time." },
+  { latin: "Pactum De Non Agerendo", meaning: "An agreement not to act.", example: "A contract wherein one party agrees not to engage in a certain activity is enforceable." },
+  { latin: "Bona Fide", meaning: "In good faith.", example: "A bona fide purchaser of property is someone who buys without knowledge of any prior defects." },
+  { latin: "Ex Post Facto", meaning: "After the fact.", example: "Laws that make an act criminal after it has already been committed are ex post facto laws and are not allowed." },
+  { latin: "Caveat Venditor", meaning: "Let the seller beware.", example: "A seller must ensure that the goods they sell meet the terms of the contract, as they bear the risk of selling defective goods." },
+  { latin: "Ab Initio", meaning: "From the beginning.", example: "If a contract is void ab initio, it was never valid from the outset." },
+  { latin: "In Personam", meaning: "Against a person.", example: "A personal action is one directed against a specific person, such as an action for breach of contract." },
+  { latin: "In Rem", meaning: "Against a thing.", example: "A property dispute where the action is directed at the property itself, not the person." },
+  { latin: "Mare Liberum", meaning: "The sea is free.", example: "The principle that the sea is international and cannot be claimed by any one nation." },
+  { latin: "Quid Pro Quo", meaning: "Something for something.", example: "A contract where one party gives something in exchange for something else is based on quid pro quo." },
+  { latin: "Sub Judice", meaning: "Under judgment.", example: "A matter that is currently being decided by the court is said to be sub judice." },
+  { latin: "Ratio Decidendi", meaning: "The reason for the decision.", example: "The ratio decidendi of a case is the principle of law on which the decision is based." },
+  { latin: "Obiter Dicta", meaning: "Things said in passing.", example: "Statements in a judgment that are not essential to the decision but offer guidance are obiter dicta." },
+  { latin: "Exoneration", meaning: "To be freed from blame or guilt.", example: "A person who is acquitted in a criminal trial is exonerated." },
+  { latin: "Locus Standi", meaning: "The right to bring an action or to be heard in a court.", example: "A person has locus standi if they have sufficient interest in the subject matter of the case." },
+  { latin: "De Minimis Non Curat Lex", meaning: "The law does not concern itself with trifles.", example: "Courts may not entertain minor disputes that are too insignificant to warrant judicial intervention." },
+  { latin: "Acta Est Fabula", meaning: "The play is over — a legal action has concluded.", example: "When a case is finally dismissed, it can be said that the acta est fabula." },
+  { latin: "Consensus ad Idem", meaning: "Agreement to the same thing.", example: "In contract law, both parties must have a consensus ad idem to form a valid contract." },
+  { latin: "In Dubio Pro Reo", meaning: "In case of doubt, favor the accused.", example: "In criminal law, if there is any doubt regarding the guilt of the accused, they must be acquitted." },
+  { latin: "Jus Soli", meaning: "Right of the soil.", example: "A person born in a country may automatically acquire citizenship based on jus soli." },
+  { latin: "Jus Sanguinis", meaning: "Right of blood.", example: "A child may acquire citizenship based on their parent's nationality under the principle of jus sanguinis." },
+  { latin: "In Camera", meaning: "In private — court proceedings held out of the public eye.", example: "Some court hearings, especially in family law matters, are held in camera to protect privacy." },
+  { latin: "Lex Specialis Derogat Legi Generali", meaning: "A special law prevails over a general law.", example: "If there is a conflict between a specific law and a general one, the specific law takes precedence." },
+  { latin: "Pecunia Non Olet", meaning: "Money does not stink.", example: "The principle that money's value does not depend on how it was originally obtained." },
+  { latin: "Fiat Justitia Ruat Caelum", meaning: "Let justice be done though the heavens fall.", example: "Courts must ensure justice is done, even if it leads to undesirable consequences." },
+  { latin: "Nemo Tenetur Seipsum Accusare", meaning: "No one is bound to accuse themselves.", example: "A person cannot be forced to testify against themselves in a criminal case." },
+  { latin: "Non Compos Mentis", meaning: "Not of sound mind.", example: "A person who is non compos mentis may not be held liable for their actions." },
+  { latin: "Mens Rea", meaning: "Guilty mind.", example: "A person who commits theft with intent (mens rea) can be charged with criminal theft." },
+  { latin: "Causa Sui", meaning: "A person who is legally capable of managing their own affairs.", example: "A minor is not causa sui because they cannot enter into contracts on their own." },
+  { latin: "Noscitur a Sociis", meaning: "A word is known by the company it keeps.", example: "In interpreting ambiguous statutes, words are given meaning based on the context in which they appear." },
+  { latin: "Nullum Crimen Sine Lege", meaning: "No crime without law.", example: "A person cannot be punished for an act unless it is defined as a crime in law." },
+  { latin: "Ipso Facto", meaning: "By the fact itself.", example: "If a person enters the country illegally, they are ipso facto subject to deportation." },
+  { latin: "Ultra Vires", meaning: "Beyond the powers.", example: "A company acting ultra vires is performing actions outside its legal powers." },
+  { latin: "Causa Mortis", meaning: "In contemplation of death.", example: "A gift made causa mortis is given by someone who believes they are about to die." },
+  { latin: "Lex Posterior Derogat Legi Priori", meaning: "The later law repeals the earlier law.", example: "If a new law contradicts an old one, the newer law takes precedence." },
+  { latin: "Nemo Debet Esse Judex In Propria Causa", meaning: "No one should be a judge in their own case.", example: "A judge must recuse themselves from cases where they have a personal interest." },
+  { latin: "Fidei Defensor", meaning: "Defender of the faith.", example: "A title historically given to English monarchs as protectors of the Christian faith." },
+  { latin: "Jus Ad Rem", meaning: "Right to a thing.", example: "A person who has a claim to a property may have jus ad rem, even if they do not currently possess it." },
+  { latin: "Caveat Lector", meaning: "Let the reader beware.", example: "A warning that information or content may be misleading or unreliable." },
+  { latin: "In Absentia", meaning: "In the absence of.", example: "A case may proceed in absentia if the defendant is not present in court." },
+  { latin: "Non Est Factum", meaning: "It is not his deed.", example: "A person may claim non est factum if they signed a contract under misrepresentation." },
+  { latin: "Testamentum Factum", meaning: "The act of making a will.", example: "A testamentum factum is a legally executed will." },
+  { latin: "Stare Decisis", meaning: "To stand by things decided.", example: "The principle that courts must follow precedents set by higher courts." },
+  { latin: "Ex Nihilo Nihil Fit", meaning: "Nothing comes from nothing.", example: "A contract cannot be valid unless something of value (consideration) is exchanged." },
+  { latin: "Bona Fide Purchaser", meaning: "A purchaser who buys property in good faith and for value.", example: "A person who buys goods in bona fide, without knowledge of any defect, may not be held liable." },
+  { latin: "Ex Tunc", meaning: "From the beginning.", example: "A contract that is declared void ex tunc is considered void from the start." },
+  { latin: "Ex Parte", meaning: "On one side only.", example: "A judge may issue an ex parte order if they believe immediate action is necessary, even if only one party is heard." },
+  { latin: "Nullus Commodum Capere Potest De Injuria Sua Propria", meaning: "No one can take advantage of their own wrong.", example: "A thief cannot profit from the stolen goods." },
+  { latin: "Vox Populi, Vox Dei", meaning: "The voice of the people is the voice of God.", example: "In a democracy, public opinion may influence laws or policies." },
+  { latin: "Lex In Dolo Malo Non Permittit Consilium", meaning: "The law does not allow one to benefit from their own deceit.", example: "A person who commits fraud cannot be allowed to benefit from it." },
+  { latin: "Actio Personalis Moritur Cum Persona", meaning: "A personal action dies with the person.", example: "If the plaintiff dies during a lawsuit, personal actions like defamation usually abate." },
+  { latin: "Jus Naturale", meaning: "Natural law.", example: "Rights that arise from human nature and reason, such as the right to life." },
+  { latin: "Contradictio in Terminis", meaning: "A contradiction in terms.", example: "A term in a contract that contradicts itself would be a contradictio in terminis." },
+  { latin: "Lex Non Cogit Ad Impossibilia", meaning: "The law does not compel the impossible.", example: "A person cannot be legally compelled to do something that is physically or practically impossible." },
+  { latin: "Fides Privata", meaning: "Private faith or private trust.", example: "A confidential relationship, such as that between a trustee and a beneficiary." },
+  { latin: "Ipse Dixit", meaning: "He himself said it.", example: "A statement that is accepted without further evidence is often called an ipse dixit." },
+  { latin: "Modus Operandi", meaning: "Method of operation.", example: "In criminal law, the modus operandi refers to the characteristic method by which a criminal commits an offense." },
+  { latin: "Fiat", meaning: "Let it be done.", example: "A fiat issued by a judge grants permission for certain actions to take place." },
+  { latin: "Quasi Contract", meaning: "An obligation imposed by law without a formal agreement.", example: "A person who receives emergency medical care without asking for it may be liable under quasi contract to pay the doctor's fees." },
+  { latin: "In Fidei Commissum", meaning: "In trust.", example: "Property held in fidei commissum is held in trust for another person." },
+  { latin: "Pactum", meaning: "A mutual agreement.", example: "A pactum between two parties sets the terms for a contract." },
+  { latin: "Falsa Demonstratio Non Nocet", meaning: "A false description does not harm.", example: "If a contract refers to an item with an incorrect description, but the item can still be identified, the contract is still valid." },
+  { latin: "Res Judicata", meaning: "A matter already judged.", example: "Once a case has been decided and is no longer appealable, it cannot be re-litigated due to res judicata." },
+  { latin: "Jus Civilis", meaning: "Civil law.", example: "Jus civilis refers to the body of laws governing civil rights and obligations." },
+  { latin: "Causa Deficiente", meaning: "Where the cause is lacking.", example: "A contract becomes void if the cause is unlawful or non-existent." },
+  { latin: "Sine Die", meaning: "Without a day — indefinitely.", example: "A meeting that is adjourned sine die is adjourned without setting a future date." },
+  { latin: "Lex Loci Contractus", meaning: "The law of the place where the contract is made.", example: "A contract executed in India would generally be governed by lex loci contractus." },
+  { latin: "Nunc Pro Tunc", meaning: "Now for then.", example: "A court may issue an order nunc pro tunc to correct a previous mistake or oversight." },
+  { latin: "In Situ", meaning: "In the place.", example: "Goods are assessed in situ when they are inspected at their original location." },
+  { latin: "Judex Bona Fide", meaning: "The judge in good faith.", example: "A judge must act bona fide, without prejudice or bias." },
+  { latin: "Pactum Rebus Sic Stantibus", meaning: "A pact that remains as long as the circumstances remain unchanged.", example: "A contract based on certain prevailing conditions might be reformed if those conditions change drastically." },
+  { latin: "Vexatio", meaning: "Harassment or annoyance.", example: "Vexatio describes the act of repeatedly filing frivolous claims to harass another party." },
+  { latin: "Ad Hoc", meaning: "For this purpose.", example: "An ad hoc committee is formed for a specific purpose or issue and disbanded after the purpose is achieved." },
+  { latin: "Bona Fide (Bonafide)", meaning: "In good faith.", example: "A bona fide purchaser acts with honest intent without any knowledge of wrongdoing." }
+];
+
+function getDayIndex() {
+  const start = new Date(2024, 0, 1);
+  const now = new Date();
+  const diff = Math.floor((now - start) / (1000 * 60 * 60 * 24));
+  return diff % maxims.length;
+}
+
+let currentIndex = getDayIndex();
+let revealed = false;
+
+function render() {
+  const m = maxims[currentIndex];
+  const isToday = currentIndex === getDayIndex();
+  document.getElementById('maxim-text').textContent = m.latin;
+  document.getElementById('maxim-num').textContent = `Maxim #${currentIndex + 1} of ${maxims.length}${isToday ? ' · Today\'s maxim' : ''}`;
+  document.getElementById('meaning-text').textContent = m.meaning;
+  document.getElementById('example-text').textContent = m.example;
+  document.getElementById('meaning-card').style.display = 'none';
+  document.getElementById('reveal-btn').style.display = 'inline-block';
+  document.getElementById('reveal-btn').textContent = 'Reveal meaning';
+  revealed = false;
+}
+
+function revealMeaning() {
+  document.getElementById('meaning-card').style.display = 'block';
+  document.getElementById('reveal-btn').style.display = 'none';
+  revealed = true;
+}
+
+function changeMaxim(dir) {
+  currentIndex = ((currentIndex + dir) + maxims.length) % maxims.length;
+  render();
+}
+
+function goToday() {
+  currentIndex = getDayIndex();
+  render();
+}
+
+render();
+</script>
